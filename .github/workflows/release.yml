@@ -29,7 +29,9 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Confirm tag matches package version
         shell: bash
-        run: test "${RELEASE_TAG}" = "v$(bun --print \"require('./package.json').version\")"
+        run: |
+          PACKAGE_VERSION="$(bun -e 'console.log(require("./package.json").version)')"
+          test "${RELEASE_TAG}" = "v${PACKAGE_VERSION}"
       - run: bun run typecheck
       - run: bun run lint
       - run: bun run test
