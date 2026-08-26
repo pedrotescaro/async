@@ -4,7 +4,10 @@
   "private": true,
   "version": "0.1.0",
   "description": "Open-source desktop writing assistant for students and developers.",
-  "author": "ASYNC contributors",
+  "author": {
+    "name": "Pedro Tescaro",
+    "email": "133606054+pedrotescaro@users.noreply.github.com"
+  },
   "homepage": "https://github.com/pedrotescaro/async",
   "repository": {
     "type": "git",
