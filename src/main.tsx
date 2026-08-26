@@ -1,3 +1,4 @@
+import './lib/browser-fallback';
 import '@fontsource-variable/geist';
 import 'highlight.js/styles/github-dark.css';
 import { StrictMode } from 'react';

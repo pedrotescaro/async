@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "vite build --config vite.site.config.ts",
+  "outputDirectory": "dist-site",
+  "framework": "vite",
+  "cleanUrls": true,
+  "trailingSlash": false
+}

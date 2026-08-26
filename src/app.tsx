@@ -1,3 +1,4 @@
+import '@/lib/browser-fallback';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import type { AppSettings, AsyncHealth, HistoryItem, SetupProgress } from '@/lib/contracts';
 import { DEFAULT_APP_SETTINGS } from '@/lib/contracts';
