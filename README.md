@@ -78,7 +78,9 @@ Tagged releases are prepared for:
 - Windows x64 — NSIS installer (`.exe`)
 - Linux x64 — AppImage and Debian package (`.deb`)
 
-Published builds will be available on [GitHub Releases](https://github.com/pedrotescaro/async/releases). Initial builds are not code-signed; verify release checksums before installing.
+Published builds will be available on [GitHub Releases](https://github.com/pedrotescaro/async/releases). The current release workflow refuses to publish an unsigned Windows build and generates GitHub build-provenance attestations for release binaries. The historical `v0.1.0` assets predate this enforcement and remain unsigned.
+
+Maintainers can configure the certificate and verify an installer by following the [Windows code-signing guide](docs/code-signing.md).
 
 ## Installation
 
@@ -156,7 +158,7 @@ Electron does not expose another application's active selection reliably on ever
 - Import/export for notes and chat history.
 - Richer study artifacts: flashcard decks and quiz sessions.
 - Optional local model/runtime upgrades behind the stable `AsyncEngine` contract.
-- Code signing and verified release provenance.
+- macOS packaging, signing, and notarization.
 
 ## Inspiration and provenance
 

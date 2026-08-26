@@ -47,13 +47,17 @@ jobs:
           - os: ubuntu-latest
             script: package:linux
             artifact: linux
+            attestation_files: |
+              release/*.AppImage
+              release/*.deb
             files: |
               release/*.AppImage
               release/*.deb
               release/latest-linux.yml
           - os: windows-latest
-            script: package:win
+            script: package:win:signed
             artifact: windows
+            attestation_files: release/*.exe
             files: |
               release/*.exe
               release/*.exe.blockmap
@@ -67,6 +71,19 @@ jobs:
         with:
           bun-version: 1.4.0
       - run: bun install --frozen-lockfile
+      - name: Require Windows signing credentials
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK || secrets.CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD || secrets.CSC_KEY_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK)) {
+            throw 'Configure WIN_CSC_LINK (or CSC_LINK) before publishing a Windows release.'
+          }
+          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_KEY_PASSWORD)) {
+            throw 'Configure WIN_CSC_KEY_PASSWORD (or CSC_KEY_PASSWORD) before publishing a Windows release.'
+          }
       - name: Package application
         run: bun run ${{ matrix.script }}
         env:
@@ -74,6 +91,28 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD || secrets.CSC_KEY_PASSWORD }}
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK || secrets.CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD || secrets.CSC_KEY_PASSWORD }}
+      - name: Verify Windows Authenticode signatures
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $targets = @(
+            Get-ChildItem release -Filter 'ASYNC-Setup-*.exe'
+            Get-Item release/win-unpacked/ASYNC.exe
+          )
+          if ($targets.Count -lt 2) {
+            throw 'Expected the packaged ASYNC executable and NSIS installer.'
+          }
+          foreach ($target in $targets) {
+            $signature = Get-AuthenticodeSignature -LiteralPath $target.FullName
+            if ($signature.Status -ne 'Valid') {
+              throw "$($target.Name) has invalid Authenticode status: $($signature.Status)"
+            }
+            Write-Host "$($target.Name) signed by $($signature.SignerCertificate.Subject)"
+          }
+      - name: Attest release binaries
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ matrix.attestation_files }}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
