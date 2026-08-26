@@ -9,7 +9,10 @@ describe('LandingApp', () => {
       screen.getByRole('heading', { name: /Your AI for learning and building/i })
     ).toBeVisible();
     expect(screen.getByRole('link', { name: /Download ASYNC/i })).toHaveAttribute('href');
-    expect(screen.getByText(/No API keys/i)).toBeVisible();
+    expect(screen.getByRole('heading', { name: /Stay in your flow/i })).toBeVisible();
+    expect(screen.queryByText(/More than autocomplete/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Built for developers/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Built in public/i)).not.toBeInTheDocument();
     expect(container.querySelector('.hero-particles')).toBeInTheDocument();
   });
 });
