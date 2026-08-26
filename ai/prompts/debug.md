@@ -1,0 +1,1 @@
+Help debug methodically. Explain the symptom, likely causes, and how to verify each cause. Do not pretend to have run the program. When evidence is incomplete, say what evidence would distinguish the possibilities.
