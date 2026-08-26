@@ -3,22 +3,33 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build and publish
+        required: true
+        type: string
 
 permissions:
   contents: write
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.0
       - run: bun install --frozen-lockfile
       - name: Confirm tag matches package version
         shell: bash
-        run: test "${GITHUB_REF_NAME}" = "v$(bun --print \"require('./package.json').version\")"
+        run: test "${RELEASE_TAG}" = "v$(bun --print \"require('./package.json').version\")"
       - run: bun run typecheck
       - run: bun run lint
       - run: bun run test
@@ -46,6 +57,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.0
@@ -70,5 +83,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" --generate-notes --title "ASYNC ${GITHUB_REF_NAME}" || true
-          gh release upload "${GITHUB_REF_NAME}" release-files/* --clobber
+          gh release create "${RELEASE_TAG}" --generate-notes --title "ASYNC ${RELEASE_TAG}" || true
+          gh release upload "${RELEASE_TAG}" release-files/* --clobber
