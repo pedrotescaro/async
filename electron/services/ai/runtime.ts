@@ -37,8 +37,11 @@ function runCommand(
     });
 
     if (options.detached) {
-      child.unref();
-      resolve();
+      child.once('error', reject);
+      child.once('spawn', () => {
+        child.unref();
+        resolve();
+      });
       return;
     }
 

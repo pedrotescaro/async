@@ -18,7 +18,18 @@ export default defineConfig({
     tailwindcss(),
     electron({
       main: { entry: 'electron/main/main.ts' },
-      preload: { input: 'electron/preload/index.ts' },
+      preload: {
+        input: 'electron/preload/index.ts',
+        vite: {
+          build: {
+            rollupOptions: {
+              output: {
+                entryFileNames: '[name].cjs',
+              },
+            },
+          },
+        },
+      },
       renderer: {},
     }),
   ],
