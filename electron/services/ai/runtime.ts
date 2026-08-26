@@ -1,9 +1,27 @@
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import type { SetupProgress } from '../../../src/lib/contracts';
 import { MODELFILE_PATH } from '../../main/constants';
 import { AsyncEngineError } from './errors';
 
 type ProgressReporter = (progress: SetupProgress) => void;
+
+function getOllamaExecutable(): string {
+  if (process.platform === 'win32') {
+    const localAppData = process.env.LOCALAPPDATA;
+    if (localAppData) {
+      const defaultWinPath = path.join(localAppData, 'Programs', 'Ollama', 'ollama.exe');
+      if (existsSync(defaultWinPath)) return defaultWinPath;
+    }
+    const programFiles = process.env.ProgramFiles;
+    if (programFiles) {
+      const progWinPath = path.join(programFiles, 'Ollama', 'ollama.exe');
+      if (existsSync(progWinPath)) return progWinPath;
+    }
+  }
+  return 'ollama';
+}
 
 function runCommand(
   args: string[],
@@ -11,7 +29,8 @@ function runCommand(
   options: { detached?: boolean } = {}
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn('ollama', args, {
+    const executable = getOllamaExecutable();
+    const child = spawn(executable, args, {
       windowsHide: true,
       stdio: options.detached ? 'ignore' : ['ignore', 'pipe', 'pipe'],
       detached: options.detached,

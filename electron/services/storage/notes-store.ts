@@ -47,9 +47,15 @@ function parseNote(id: string, source: string): Note | null {
 async function persist(note: Note): Promise<void> {
   await mkdir(notesPath(), { recursive: true });
   const target = notePath(note.id);
-  const temporary = `${target}.${process.pid}.tmp`;
-  await writeFile(temporary, serializeNote(note), 'utf8');
-  await rename(temporary, target);
+  const content = serializeNote(note);
+  const temporary = `${target}.${process.pid}.${Date.now()}.tmp`;
+  await writeFile(temporary, content, 'utf8');
+  try {
+    await rename(temporary, target);
+  } catch {
+    await writeFile(target, content, 'utf8');
+    await unlink(temporary).catch(() => {});
+  }
 }
 
 export class NotesStore {

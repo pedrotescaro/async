@@ -12,6 +12,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
@@ -65,7 +67,13 @@ jobs:
         with:
           bun-version: 1.4.0
       - run: bun install --frozen-lockfile
-      - run: bun run ${{ matrix.script }}
+      - name: Package application
+        run: bun run ${{ matrix.script }}
+        env:
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK || secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD || secrets.CSC_KEY_PASSWORD }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK || secrets.CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD || secrets.CSC_KEY_PASSWORD }}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}

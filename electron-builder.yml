@@ -21,6 +21,9 @@ win:
       arch: [x64]
   icon: assets/app/icon.png
   artifactName: ${productName}-Setup-${version}-${arch}.${ext}
+  signingHashAlgorithms:
+    - sha256
+  rfc3161TimeStampServer: http://timestamp.digicert.com
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
