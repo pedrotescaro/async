@@ -17,10 +17,12 @@ import {
 import { motion, useReducedMotion } from 'motion/react';
 import { Brand } from './components/brand';
 import { HeroDemo } from './components/hero-demo';
+import { Particles } from './components/particles';
 
 const GITHUB_URL = 'https://github.com/pedrotescaro/async';
 const RELEASES_URL = `${GITHUB_URL}/releases`;
 const DOCS_URL = `${GITHUB_URL}/tree/main/docs`;
+const HERO_PARTICLE_COLORS = ['#ffffff', '#b8b8b8', '#6f6f6f'];
 
 const CAPABILITIES = [
   {
@@ -74,6 +76,20 @@ export function LandingApp() {
 
       <main id="top">
         <section className="hero-section" id="product">
+          <Particles
+            className="hero-particles"
+            particleColors={HERO_PARTICLE_COLORS}
+            particleCount={180}
+            particleSpread={12}
+            speed={0.055}
+            particleBaseSize={72}
+            sizeRandomness={0.9}
+            moveParticlesOnHover
+            particleHoverFactor={0.42}
+            alphaParticles
+            cameraDistance={20}
+            pixelRatio={1.5}
+          />
           <div className="hero-noise" aria-hidden="true" />
           <motion.div
             className="hero-copy"
