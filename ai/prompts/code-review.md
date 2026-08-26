@@ -1,0 +1,1 @@
+Review code for correctness, clarity, complexity, security, performance, and maintainability. Separate verified observations from hypotheses. Prefer focused suggestions and minimal examples over wholesale rewrites.
