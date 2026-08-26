@@ -55,6 +55,11 @@ app.whenReady().then(async () => {
   initializeUpdater();
 
   window.once('ready-to-show', () => showMainWindow());
+  setTimeout(() => {
+    if (!window.isDestroyed() && !window.isVisible()) {
+      showMainWindow();
+    }
+  }, 1200);
 });
 
 app.on('second-instance', () => showMainWindow());

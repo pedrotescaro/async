@@ -65,6 +65,7 @@ export function createMainWindow(): BrowserWindow {
 
 export function showMainWindow(selection?: SelectionPayload | null): void {
   if (!mainWindow) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
   if (!selection) return;
