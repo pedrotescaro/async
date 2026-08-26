@@ -42,6 +42,7 @@
     "electron-updater": "^6.8.3",
     "highlight.js": "^11.11.1",
     "motion": "^12.23.26",
+    "ogl": "^1.0.11",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-markdown": "^10.1.0",
