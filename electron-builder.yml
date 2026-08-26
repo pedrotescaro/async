@@ -1,0 +1,39 @@
+appId: dev.async.desktop
+productName: ASYNC
+copyright: Copyright (c) 2026 ASYNC contributors
+asar: true
+directories:
+  output: release
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - assets/**/*
+  - ai/**/*
+  - package.json
+  - LICENSE
+publish:
+  provider: github
+  owner: pedrotescaro
+  repo: async
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: assets/app/icon.png
+  artifactName: ${productName}-Setup-${version}-${arch}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  category: Utility
+  executableName: async
+  icon: assets/icons
+  syncDesktopName: true
+  artifactName: ${productName}-${version}-${arch}.${ext}
