@@ -6,13 +6,14 @@ describe('LandingApp', () => {
   it('communicates the independent ASYNC product and its core actions', () => {
     const { container } = render(<LandingApp />);
     expect(
-      screen.getByRole('heading', { name: /Your AI for learning and building/i })
+      screen.getByRole('heading', { name: /Write better, learn faster, build smarter/i })
     ).toBeVisible();
-    expect(screen.getByRole('link', { name: /Download ASYNC/i })).toHaveAttribute('href');
-    expect(screen.getByRole('heading', { name: /Stay in your flow/i })).toBeVisible();
-    expect(screen.queryByText(/More than autocomplete/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Built for developers/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Built in public/i)).not.toBeInTheDocument();
-    expect(container.querySelector('.hero-particles')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Download for free/i })).toHaveAttribute('href');
+    expect(screen.getByRole('link', { name: /View on GitHub/i })).toHaveAttribute('href');
+    expect(
+      screen.queryByText(/Open source · Local-first · Built for learning/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Stay in your flow/i })).not.toBeInTheDocument();
+    expect(container.querySelector('.particles-container')).toBeInTheDocument();
   });
 });
