@@ -4,18 +4,18 @@ ASYNC release builds use Authenticode through `electron-builder`. The certificat
 
 ## Repository secrets
 
-Add these GitHub Actions secrets before creating the next release tag:
+If a code-signing certificate is available, add these GitHub Actions secrets:
 
 - `WIN_CSC_LINK`: base64-encoded `.pfx`/`.p12` certificate, an HTTPS URL, or another value accepted by `electron-builder`.
 - `WIN_CSC_KEY_PASSWORD`: password for the certificate private key.
 
-The release workflow calls `package:win:signed`, enables `forceCodeSigning`, and then verifies both `release/win-unpacked/ASYNC.exe` and the NSIS installer with `Get-AuthenticodeSignature`. Missing or invalid credentials stop the release instead of silently publishing unsigned executables.
+When credentials are configured, the release workflow calls `package:win:signed`, enables `forceCodeSigning`, and verifies both `release/win-unpacked/ASYNC.exe` and the NSIS installer with `Get-AuthenticodeSignature`. If credentials are not present, the workflow packages an unsigned Windows release.
 
-Release AppImage, Debian, and Windows binaries also receive GitHub artifact attestations. Verify a downloaded binary with:
+Release AppImage, Debian, and Windows binaries always receive GitHub artifact provenance attestations. When signed, verify a downloaded binary with:
 
 ```powershell
 gh attestation verify .\ASYNC-Setup-<version>-x64.exe --repo pedrotescaro/async
 Get-AuthenticodeSignature .\ASYNC-Setup-<version>-x64.exe | Format-List Status,SignerCertificate,TimeStamperCertificate
 ```
 
-`Status` must be `Valid`, and the signer must match the certificate owned by the ASYNC publisher. The existing `v0.1.0` release was created before signing enforcement and is intentionally documented as unsigned.
+When signed, `Status` must be `Valid`, and the signer must match the certificate owned by the ASYNC publisher.
