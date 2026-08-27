@@ -28,14 +28,14 @@
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
-ASYNC is a local-first desktop assistant that combines writing help, technical tutoring, study tools, code review, debugging, translation, and local Markdown notes in one fast interface. The user sees one product — ASYNC — without provider pickers, API key forms, or model selectors.
+ASYNC is a local-first desktop assistant that combines writing help, technical tutoring, study tools, code review, debugging, translation, and local Markdown notes in one fast interface. The user sees one product — ASYNC — without provider pickers or API key forms. The desktop model menu can select models already installed in the local runtime without exposing its URL or credentials to the renderer.
 
 > The repository currently contains the first functional MVP architecture. Runtime installation is not silently automated yet: ASYNC detects an existing local runtime, can start it, download the base model, create the logical `async` model, stream responses, and expose technical details only in Diagnostics.
 
 ## Product principles
 
 - **Teaching first.** In educational contexts, ASYNC explains concepts and provides useful hints before taking over.
-- **One native intelligence.** The renderer never knows which local runtime or base model is used.
+- **One native intelligence boundary.** The renderer can request a sanitized local model name, effort, and speed, but never knows the runtime URL or calls the provider directly.
 - **Local-first.** Notes, chat history, app settings, and AI runtime state are distinct local data domains.
 - **Fast by default.** The Electron main process streams generation without blocking the renderer and supports cancellation.
 - **Honest by design.** ASYNC never claims code was executed or tests passed without real evidence.
@@ -44,6 +44,9 @@ ASYNC is a local-first desktop assistant that combines writing help, technical t
 ## Features
 
 - Chat with streaming Markdown responses, syntax highlighting, code copy, smart scroll, attachments, stop generation, and contextual follow-ups.
+- Desktop model, effort, and speed controls backed by the models installed in the local runtime.
+- Voice input through Chromium speech recognition when available, with automatic system-language mode plus Portuguese, English, Spanish, French, German, and Italian choices.
+- Native maximize/restore and full-screen controls in the frameless Electron window.
 - Context-aware suggestions for text, code, Markdown, documentation, errors, and stack traces.
 - Structured writing transformations with original/result comparison, change reasons, confidence, copy, retry, replace, and **Ask why**.
 - Local Markdown notes with create, edit, search, pin, delete, and send-to-ASYNC actions.
@@ -69,7 +72,9 @@ Local AI Runtime
 logical model: async
 ```
 
-The default development runtime uses the included [`ai/Modelfile`](ai/Modelfile). Its current base model is an implementation detail and is not presented as the product in the main interface. The runtime URL and logical model name can be overridden through main-process-only environment values in [`.env.example`](.env.example).
+The default development runtime uses the included [`ai/Modelfile`](ai/Modelfile). Its base model remains an implementation detail behind the automatic ASYNC choice, while advanced desktop users can explicitly choose another model that is already installed. The runtime URL and logical default model can be overridden through main-process-only environment values in [`.env.example`](.env.example).
+
+On startup, ASYNC warms the default model in the background and keeps it loaded for 30 minutes. Simple requests use a compact prompt and a smaller context/answer budget; code review, debugging, large context, or high effort keep the deeper profile.
 
 ## Download
 
@@ -148,6 +153,7 @@ See [Architecture](docs/architecture.md) and [Privacy model](docs/privacy.md) fo
 | `Ctrl + Enter` / `Enter` | Send (the composer uses `Enter`; `Shift+Enter` adds a line) |
 | `Ctrl + N` | Start a new chat |
 | `Ctrl + K` | Open the command palette |
+| `F11` | Enter or leave full-screen mode |
 
 Electron does not expose another application's active selection reliably on every supported platform. The current adapter reads the clipboard at shortcut time; native per-platform selection adapters can be added behind the same boundary without changing the renderer.
 
@@ -157,7 +163,7 @@ Electron does not expose another application's active selection reliably on ever
 - Native selection capture adapters for Windows and Linux/X11.
 - Import/export for notes and chat history.
 - Richer study artifacts: flashcard decks and quiz sessions.
-- Optional local model/runtime upgrades behind the stable `AsyncEngine` contract.
+- Smarter automatic routing across multiple installed local model sizes behind the stable `AsyncEngine` contract.
 - macOS packaging, signing, and notarization.
 
 ## Inspiration and provenance

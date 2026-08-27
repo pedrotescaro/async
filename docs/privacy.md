@@ -20,3 +20,9 @@ The MVP includes no analytics SDK and no mandatory remote account. The update se
 ## Clearing data
 
 Settings includes controls to clear chat history and notes. Deletions are permanent filesystem operations in the current MVP; export and trash/recovery support remain roadmap items.
+
+## Voice input
+
+Voice input requests microphone access only after the user presses the microphone button. ASYNC stops the temporary media track immediately after permission is established and stores only the resulting text when the user sends it; raw audio is not written to ASYNC notes or history.
+
+Transcription uses Chromium's Web Speech API when it is available. Depending on the operating system and Chromium build, speech recognition may use an external platform speech service, so it should not be treated as guaranteed offline transcription. The composer reports unsupported, denied, and recognition-error states without silently recording.
