@@ -2,7 +2,7 @@
   "name": "async-desktop",
   "desktopName": "dev.async.desktop",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open-source desktop writing assistant for students and developers.",
   "author": {
     "name": "Pedro Tescaro",
