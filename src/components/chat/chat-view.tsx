@@ -341,7 +341,7 @@ export function ChatView({
                         <button
                           type="button"
                           onClick={() => void copyMessage(message)}
-                          className="mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] text-[var(--faint)] opacity-0 transition hover:bg-[var(--surface-raised)] hover:text-[var(--text)] group-hover:opacity-100 focus:opacity-100"
+                          className="mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] text-[var(--faint)] opacity-0 transition hover:bg-[var(--surface-raised)] hover:text-[var(--text)] group-hover:opacity-100 focus-visible:opacity-100"
                         >
                           {copiedId === message.id ? (
                             <CheckIcon className="size-3" />
@@ -363,7 +363,7 @@ export function ChatView({
                       key={label}
                       type="button"
                       onClick={() => void send(label)}
-                      className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[11px] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--text)]"
+                      className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[11px] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)] hover:text-[var(--text)]"
                     >
                       {label}
                     </button>
@@ -386,7 +386,7 @@ export function ChatView({
                   behavior: 'smooth',
                 })
               }
-              className="absolute bottom-36 left-1/2 z-30 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] shadow-lg"
+              className="absolute bottom-36 left-1/2 z-30 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] shadow-lg hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
               aria-label="Scroll to latest message"
             >
               <ArrowDownIcon className="size-4" />

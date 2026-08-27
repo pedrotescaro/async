@@ -63,7 +63,7 @@ export function DiagnosticsView({ health, onRefreshHealth, onSetup }: Diagnostic
           <button
             type="button"
             onClick={() => void refresh()}
-            className="flex h-10 items-center gap-2 rounded-xl border border-[var(--border)] px-3 text-xs hover:bg-[var(--surface-raised)]"
+            className="flex h-10 items-center gap-2 rounded-xl border border-[var(--border)] px-3 text-xs hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
           >
             <ArrowClockwiseIcon className={loading ? 'size-4 animate-spin' : 'size-4'} /> Refresh
           </button>
@@ -87,7 +87,7 @@ export function DiagnosticsView({ health, onRefreshHealth, onSetup }: Diagnostic
             <button
               type="button"
               onClick={onSetup}
-              className="mt-5 h-10 rounded-xl bg-[var(--text)] px-4 text-xs font-semibold text-[var(--bg)]"
+              className="mt-5 h-10 rounded-xl bg-[var(--text)] px-4 text-xs font-semibold text-[var(--bg)] hover:opacity-85"
             >
               Run setup
             </button>

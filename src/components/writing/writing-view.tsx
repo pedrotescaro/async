@@ -86,7 +86,7 @@ export function WritingView({
                 setInstruction(event.target.value as TransformRequest['instruction'])
               }
               aria-label="Writing action"
-              className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs outline-none"
+              className="field-control h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs outline-none"
             >
               {ACTIONS.map((action) => (
                 <option key={action.id} value={action.id}>
@@ -99,7 +99,7 @@ export function WritingView({
                 value={targetLanguage}
                 onChange={(event) => setTargetLanguage(event.target.value)}
                 aria-label="Target language"
-                className="h-10 w-28 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs outline-none"
+                className="field-control h-10 w-28 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs outline-none"
               />
             )}
             <button
@@ -115,7 +115,7 @@ export function WritingView({
         </div>
 
         <div className="grid min-h-[430px] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] lg:grid-cols-2">
-          <section className="flex min-h-[320px] flex-col border-b border-[var(--border)] lg:border-b-0 lg:border-r">
+          <section className="editor-frame flex min-h-[320px] flex-col border-b border-[var(--border)] lg:border-b-0 lg:border-r">
             <div className="flex h-12 items-center justify-between border-b border-[var(--border)] px-4">
               <span className="text-xs font-semibold">Original</span>
               <span className="text-[10px] text-[var(--faint)]">
@@ -212,21 +212,21 @@ export function WritingView({
             <button
               type="button"
               onClick={() => onInitialContentChange(result.result)}
-              className="flex h-9 items-center gap-1.5 rounded-lg bg-[var(--text)] px-3 text-xs font-semibold text-[var(--bg)]"
+              className="flex h-9 items-center gap-1.5 rounded-lg bg-[var(--text)] px-3 text-xs font-semibold text-[var(--bg)] hover:opacity-85"
             >
               Replace <ArrowRightIcon className="size-3.5" />
             </button>
             <button
               type="button"
               onClick={() => void copy()}
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 text-xs"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 text-xs hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
             >
               <CopyIcon className="size-3.5" /> Copy
             </button>
             <button
               type="button"
               onClick={() => void transform()}
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 text-xs"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 text-xs hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
             >
               <ArrowCounterClockwiseIcon className="size-3.5" /> Try again
             </button>
@@ -237,7 +237,7 @@ export function WritingView({
                   `Explain why you made these changes and teach me the relevant rules:\n\nOriginal:\n${initialContent}\n\nResult:\n${result.result}\n\nSummary:\n${result.explanation}`
                 )
               }
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 text-xs"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 text-xs hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
             >
               <QuestionIcon className="size-3.5" /> Ask why
             </button>

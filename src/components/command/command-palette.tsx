@@ -72,7 +72,7 @@ export function CommandPalette({ open, onClose, onNavigate, onPrompt }: CommandP
             onMouseDown={(event) => event.stopPropagation()}
             className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/12 bg-[#0a0a0a] text-[#f3f3f3] shadow-2xl"
           >
-            <div className="flex items-center gap-3 border-b border-white/10 px-4">
+            <div className="command-search-frame flex items-center gap-3 border-b border-white/10 px-4">
               <MagnifyingGlassIcon className="size-4 text-[#858585]" />
               <input
                 ref={inputRef}
@@ -90,7 +90,7 @@ export function CommandPalette({ open, onClose, onNavigate, onPrompt }: CommandP
                 type="button"
                 onClick={onClose}
                 aria-label="Close commands"
-                className="flex size-8 items-center justify-center rounded-lg text-[#858585] hover:bg-white/8 hover:text-white"
+                className="command-button flex size-8 items-center justify-center rounded-lg text-[#858585] hover:bg-white/8 hover:text-white"
               >
                 <XIcon className="size-4" />
               </button>
@@ -103,7 +103,7 @@ export function CommandPalette({ open, onClose, onNavigate, onPrompt }: CommandP
                     key={command.label}
                     type="button"
                     onClick={() => run(command)}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[#aaaaaa] transition hover:bg-white/8 hover:text-white focus:bg-white/8 focus:text-white"
+                    className="command-button flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[#aaaaaa] hover:bg-white/8 hover:text-white"
                   >
                     <Icon className="size-4" />
                     <span className="flex-1">{command.label}</span>

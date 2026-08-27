@@ -32,7 +32,7 @@ function SettingRow({ label, description, children }: SettingRowProps) {
 }
 
 const controlClass =
-  'h-9 rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] px-3 text-xs outline-none';
+  'field-control h-9 rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] px-3 text-xs outline-none';
 
 export function SettingsView({ settings, onSave }: SettingsViewProps) {
   const [shortcut, setShortcut] = useState(settings.globalShortcut);
@@ -78,7 +78,7 @@ export function SettingsView({ settings, onSave }: SettingsViewProps) {
               type="checkbox"
               checked={settings.launchAtStartup}
               onChange={(event) => void onSave({ launchAtStartup: event.target.checked })}
-              className="size-4 accent-[var(--text)]"
+              className="checkbox-control size-4 accent-[var(--text)]"
               aria-label="Launch at startup"
             />
           </SettingRow>
@@ -204,7 +204,7 @@ export function SettingsView({ settings, onSave }: SettingsViewProps) {
             <button
               type="button"
               onClick={() => void window.asyncDesktop.history.clear()}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 text-xs hover:bg-[var(--surface-raised)]"
+              className="flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 text-xs hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
             >
               <TrashIcon className="size-3.5" /> Clear history
             </button>
@@ -216,7 +216,7 @@ export function SettingsView({ settings, onSave }: SettingsViewProps) {
             <button
               type="button"
               onClick={() => void clearNotes()}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 text-xs hover:bg-[var(--surface-raised)]"
+              className="flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 text-xs hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
             >
               <TrashIcon className="size-3.5" /> Clear notes
             </button>

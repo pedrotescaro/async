@@ -55,7 +55,7 @@ export function ChatComposer({
   }
 
   return (
-    <div className="rounded-[22px] border border-[var(--border-strong)] bg-[var(--surface)] shadow-[0_22px_65px_rgba(0,0,0,0.18)] transition focus-within:border-[var(--text)]/35">
+    <div className="composer-frame rounded-[22px] border border-[var(--border-strong)] bg-[var(--surface)] shadow-[0_22px_65px_rgba(0,0,0,0.18)]">
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 px-4 pt-3">
           {attachments.map((attachment) => (
@@ -117,7 +117,7 @@ export function ChatComposer({
             type="button"
             onClick={onStop}
             aria-label="Stop generation"
-            className="flex size-9 items-center justify-center rounded-xl bg-[var(--text)] text-[var(--bg)]"
+            className="flex size-9 items-center justify-center rounded-xl bg-[var(--text)] text-[var(--bg)] hover:opacity-85"
           >
             <SquareIcon className="size-3.5" weight="fill" />
           </button>

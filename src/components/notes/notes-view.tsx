@@ -67,13 +67,13 @@ export function NotesView({ onSendToAsync }: NotesViewProps) {
             <button
               type="button"
               onClick={() => void createNote()}
-              className="flex size-9 items-center justify-center rounded-xl bg-[var(--text)] text-[var(--bg)]"
+              className="flex size-9 items-center justify-center rounded-xl bg-[var(--text)] text-[var(--bg)] hover:opacity-85"
               aria-label="Create note"
             >
               <PlusIcon className="size-4" />
             </button>
           </div>
-          <label className="flex h-9 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3">
+          <label className="field-frame flex h-9 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3">
             <MagnifyingGlassIcon className="size-3.5 text-[var(--faint)]" />
             <input
               value={query}
@@ -120,7 +120,7 @@ export function NotesView({ onSendToAsync }: NotesViewProps) {
       <section className="flex min-w-0 flex-col">
         {selected ? (
           <>
-            <div className="flex h-14 items-center justify-between border-b border-[var(--border)] px-5">
+            <div className="editor-line flex h-14 items-center justify-between border-b border-[var(--border)] px-5">
               <input
                 value={selected.title}
                 onChange={(event) => {
@@ -163,13 +163,13 @@ export function NotesView({ onSendToAsync }: NotesViewProps) {
               onBlur={() => void updateSelected({ content: selected.content })}
               placeholder="Write in Markdown..."
               aria-label="Note content"
-              className="min-h-0 flex-1 resize-none bg-transparent p-6 font-mono text-[13px] leading-7 outline-none placeholder:text-[var(--faint)]"
+              className="editor-control min-h-0 flex-1 resize-none bg-transparent p-6 font-mono text-[13px] leading-7 outline-none placeholder:text-[var(--faint)]"
             />
             <div className="flex flex-wrap items-center gap-2 border-t border-[var(--border)] px-5 py-3">
               <button
                 type="button"
                 onClick={() => onSendToAsync(`Help me with this note:\n\n${selected.content}`)}
-                className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--text)] px-3 text-[11px] font-semibold text-[var(--bg)]"
+                className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--text)] px-3 text-[11px] font-semibold text-[var(--bg)] hover:opacity-85"
               >
                 <ChatCircleIcon className="size-3.5" /> Send to ASYNC
               </button>
@@ -180,7 +180,7 @@ export function NotesView({ onSendToAsync }: NotesViewProps) {
                     `Improve this note and explain the useful changes:\n\n${selected.content}`
                   )
                 }
-                className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 text-[11px]"
+                className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 text-[11px] hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
               >
                 <SparkleIcon className="size-3.5" /> Improve
               </button>
@@ -189,7 +189,7 @@ export function NotesView({ onSendToAsync }: NotesViewProps) {
                 onClick={() =>
                   onSendToAsync(`Summarize this note into study notes:\n\n${selected.content}`)
                 }
-                className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 text-[11px]"
+                className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 text-[11px] hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
               >
                 <NotePencilIcon className="size-3.5" /> Summarize
               </button>

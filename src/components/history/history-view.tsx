@@ -50,7 +50,7 @@ export function HistoryView({ onContinue }: HistoryViewProps) {
               Continue where you left off.
             </h1>
           </div>
-          <label className="flex h-10 w-64 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3">
+          <label className="field-frame flex h-10 w-64 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3">
             <MagnifyingGlassIcon className="size-3.5 text-[var(--faint)]" />
             <input
               value={query}
@@ -66,12 +66,12 @@ export function HistoryView({ onContinue }: HistoryViewProps) {
           {filtered.map((item) => (
             <article
               key={item.id}
-              className="group flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 transition hover:border-[var(--border-strong)]"
+              className="interactive-card group flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3"
             >
               <button
                 type="button"
                 onClick={() => onContinue(item)}
-                className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-raised)]"
+                className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-raised)] hover:bg-[var(--border)]"
                 aria-label={`Continue ${item.title}`}
               >
                 <ChatCircleIcon className="size-4" />
@@ -102,7 +102,7 @@ export function HistoryView({ onContinue }: HistoryViewProps) {
                 type="button"
                 onClick={() => void remove(item)}
                 aria-label="Delete conversation"
-                className="flex size-9 items-center justify-center rounded-lg text-[var(--muted)] opacity-0 transition hover:bg-[var(--surface-raised)] hover:text-[var(--text)] group-hover:opacity-100 focus:opacity-100"
+                className="flex size-9 items-center justify-center rounded-lg text-[var(--muted)] opacity-0 hover:bg-[var(--surface-raised)] hover:text-[var(--text)] group-hover:opacity-100 focus-visible:opacity-100"
               >
                 <TrashIcon className="size-4" />
               </button>
