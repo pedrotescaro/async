@@ -21,7 +21,9 @@ Each IPC handler verifies its sender. External navigation is blocked inside the 
 - `setup()` reports product-level progress;
 - `diagnostics()` exposes technical state only on the Diagnostics screen.
 
-The main interface uses ASYNC terminology. The runtime URL and implementation model are not renderer configuration and can change without a frontend migration.
+The main interface uses ASYNC terminology. The runtime URL and provider configuration remain main-process-only and can change without a frontend migration. The preload bridge exposes only a sanitized inventory of installed local model names and accepts a validated model name, effort, and speed with each request.
+
+The engine caches the runtime model inventory briefly, warms the automatic ASYNC model after a successful health check, and keeps active models loaded for 30 minutes. It selects compact generation limits for simple/fast requests and preserves larger context and optional reasoning for complex or high-effort work.
 
 ## Runtime setup
 

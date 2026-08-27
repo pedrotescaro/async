@@ -33,6 +33,7 @@ interface ChatViewProps {
   seed: ConversationSeed;
   engineReady: boolean;
   onDraftChange: (draft: string) => void;
+  onSettingsChange: (patch: Partial<AppSettings>) => Promise<void>;
   onHistorySaved: () => void;
   onOpenDiagnostics: () => void;
 }
@@ -62,6 +63,7 @@ export function ChatView({
   seed,
   engineReady,
   onDraftChange,
+  onSettingsChange,
   onHistorySaved,
   onOpenDiagnostics,
 }: ChatViewProps) {
@@ -74,6 +76,8 @@ export function ChatView({
   const messagesRef = useRef(messages);
   const responseIdRef = useRef<string | null>(null);
   const activeRequestIdRef = useRef<string | null>(null);
+  const deltaBufferRef = useRef('');
+  const deltaFrameRef = useRef<number | null>(null);
   const sessionIdRef = useRef(seed.id ?? crypto.randomUUID());
   const scrollRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
@@ -84,6 +88,22 @@ export function ChatView({
     messagesRef.current = next;
     setMessages(next);
   }, []);
+
+  const flushBufferedResponse = useCallback(() => {
+    if (deltaFrameRef.current !== null) {
+      window.cancelAnimationFrame(deltaFrameRef.current);
+      deltaFrameRef.current = null;
+    }
+    const text = deltaBufferRef.current;
+    const responseId = responseIdRef.current;
+    deltaBufferRef.current = '';
+    if (!text || !responseId) return;
+    replaceMessages(
+      messagesRef.current.map((message) =>
+        message.id === responseId ? { ...message, content: `${message.content}${text}` } : message
+      )
+    );
+  }, [replaceMessages]);
 
   const persistConversation = useCallback(
     async (nextMessages: AsyncMessage[]) => {
@@ -110,16 +130,16 @@ export function ChatView({
       if (event.requestId !== activeRequestIdRef.current || !responseIdRef.current) return;
       const responseId = responseIdRef.current;
       if (event.type === 'delta' && event.text) {
-        replaceMessages(
-          messagesRef.current.map((message) =>
-            message.id === responseId
-              ? { ...message, content: `${message.content}${event.text}` }
-              : message
-          )
-        );
+        deltaBufferRef.current += event.text;
+        if (deltaFrameRef.current === null) {
+          deltaFrameRef.current = window.requestAnimationFrame(flushBufferedResponse);
+        }
         return;
       }
       if (event.type === 'error') {
+        deltaBufferRef.current = '';
+        if (deltaFrameRef.current !== null) window.cancelAnimationFrame(deltaFrameRef.current);
+        deltaFrameRef.current = null;
         const next = messagesRef.current.filter((message) => message.id !== responseId);
         replaceMessages(next);
         setStreamError(event.error?.message ?? "ASYNC couldn't complete that request.");
@@ -129,14 +149,18 @@ export function ChatView({
         return;
       }
       if (event.type === 'done') {
+        flushBufferedResponse();
         setActiveRequestId(null);
         activeRequestIdRef.current = null;
         responseIdRef.current = null;
         void persistConversation(messagesRef.current);
       }
     });
-    return unsubscribe;
-  }, [persistConversation, replaceMessages]);
+    return () => {
+      unsubscribe();
+      if (deltaFrameRef.current !== null) window.cancelAnimationFrame(deltaFrameRef.current);
+    };
+  }, [flushBufferedResponse, persistConversation, replaceMessages]);
 
   useEffect(() => {
     const element = scrollRef.current;
@@ -176,6 +200,9 @@ export function ChatView({
       responseDetail: settings.responseDetail,
       learningStyle: settings.learningStyle,
       codeExperience: settings.codeExperience,
+      selectedModel: settings.selectedModel,
+      effort: settings.chatEffort,
+      speed: settings.chatSpeed,
     });
   }
 
@@ -225,8 +252,10 @@ export function ChatView({
               value={draft}
               attachments={attachments}
               busy={Boolean(activeRequestId)}
+              settings={settings}
               onChange={onDraftChange}
               onAttachmentsChange={setAttachments}
+              onSettingsChange={onSettingsChange}
               onSend={() => void send()}
               onStop={() => void stop()}
             />
@@ -341,7 +370,7 @@ export function ChatView({
                         <button
                           type="button"
                           onClick={() => void copyMessage(message)}
-                          className="mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] text-[var(--faint)] opacity-0 transition hover:bg-[var(--surface-raised)] hover:text-[var(--text)] group-hover:opacity-100 focus:opacity-100"
+                          className="mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] text-[var(--faint)] opacity-0 transition hover:bg-[var(--surface-raised)] hover:text-[var(--text)] group-hover:opacity-100 focus-visible:opacity-100"
                         >
                           {copiedId === message.id ? (
                             <CheckIcon className="size-3" />
@@ -363,7 +392,7 @@ export function ChatView({
                       key={label}
                       type="button"
                       onClick={() => void send(label)}
-                      className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[11px] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--text)]"
+                      className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[11px] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)] hover:text-[var(--text)]"
                     >
                       {label}
                     </button>
@@ -386,7 +415,7 @@ export function ChatView({
                   behavior: 'smooth',
                 })
               }
-              className="absolute bottom-36 left-1/2 z-30 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] shadow-lg"
+              className="absolute bottom-36 left-1/2 z-30 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] shadow-lg hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
               aria-label="Scroll to latest message"
             >
               <ArrowDownIcon className="size-4" />
@@ -398,8 +427,10 @@ export function ChatView({
                 value={draft}
                 attachments={attachments}
                 busy={Boolean(activeRequestId)}
+                settings={settings}
                 onChange={onDraftChange}
                 onAttachmentsChange={setAttachments}
+                onSettingsChange={onSettingsChange}
                 onSend={() => void send()}
                 onStop={() => void stop()}
               />

@@ -6,7 +6,12 @@ import type {
   Note,
   TransformRequest,
 } from '../../src/lib/contracts';
-import { hideMainWindow } from '../main/window-manager';
+import {
+  getWindowState,
+  hideMainWindow,
+  toggleFullScreen,
+  toggleMaximize,
+} from '../main/window-manager';
 import type { LocalAsyncEngine } from '../services/ai/async-engine';
 import { toPublicAsyncError } from '../services/ai/errors';
 import type { HistoryStore } from '../services/storage/history-store';
@@ -56,6 +61,18 @@ export function registerIpcHandlers(dependencies: HandlerDependencies): void {
     assertTrustedRenderer(event);
     hideMainWindow();
   });
+  ipcMain.handle(IPC_CHANNELS.appToggleMaximize, (event) => {
+    assertTrustedRenderer(event);
+    return toggleMaximize();
+  });
+  ipcMain.handle(IPC_CHANNELS.appToggleFullScreen, (event) => {
+    assertTrustedRenderer(event);
+    return toggleFullScreen();
+  });
+  ipcMain.handle(IPC_CHANNELS.appWindowStateGet, (event) => {
+    assertTrustedRenderer(event);
+    return getWindowState();
+  });
   ipcMain.handle(IPC_CHANNELS.appOpenExternal, async (event, url: unknown) => {
     assertTrustedRenderer(event);
     if (typeof url !== 'string') throw new Error('Invalid external URL.');
@@ -67,6 +84,10 @@ export function registerIpcHandlers(dependencies: HandlerDependencies): void {
   ipcMain.handle(IPC_CHANNELS.aiHealth, async (event) => {
     assertTrustedRenderer(event);
     return engine.health();
+  });
+  ipcMain.handle(IPC_CHANNELS.aiModels, async (event) => {
+    assertTrustedRenderer(event);
+    return engine.models();
   });
   ipcMain.handle(IPC_CHANNELS.aiDiagnostics, async (event) => {
     assertTrustedRenderer(event);

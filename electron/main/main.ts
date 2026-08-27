@@ -1,4 +1,4 @@
-import { app, Menu } from 'electron';
+import { app, dialog, Menu } from 'electron';
 import { registerIpcHandlers } from '../ipc/register-handlers';
 import { LocalAsyncEngine } from '../services/ai/async-engine';
 import { captureSelection } from '../services/selection/capture';
@@ -16,56 +16,69 @@ if (process.platform === 'linux') {
 }
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
-if (!hasSingleInstanceLock) app.quit();
 
-const shortcutManager = new ShortcutManager();
+if (!hasSingleInstanceLock) {
+  app.quit();
+} else {
+  const shortcutManager = new ShortcutManager();
 
-app.whenReady().then(async () => {
-  app.setName(APP_NAME);
-  if (process.platform === 'win32') app.setAppUserModelId('dev.async.desktop');
-  Menu.setApplicationMenu(null);
+  app.whenReady().then(async () => {
+    try {
+      app.setName(APP_NAME);
+      if (process.platform === 'win32') app.setAppUserModelId('dev.async.desktop');
+      Menu.setApplicationMenu(null);
 
-  const settingsStore = new SettingsStore();
-  const settings = await settingsStore.get();
-  const window = createMainWindow();
-  const showWithClipboard = () => showMainWindow(captureSelection());
+      const settingsStore = new SettingsStore();
+      const settings = await settingsStore.get();
+      const window = createMainWindow();
 
-  const registerShortcut = (accelerator: string) => {
-    const registered = shortcutManager.register(accelerator, showWithClipboard);
-    if (!registered && accelerator !== DEFAULT_SHORTCUT) {
-      shortcutManager.register(DEFAULT_SHORTCUT, showWithClipboard);
+      const showWithClipboard = () => showMainWindow(captureSelection());
+
+      const registerShortcut = (accelerator: string) => {
+        const registered = shortcutManager.register(accelerator, showWithClipboard);
+        if (!registered && accelerator !== DEFAULT_SHORTCUT) {
+          shortcutManager.register(DEFAULT_SHORTCUT, showWithClipboard);
+        }
+      };
+
+      registerIpcHandlers({
+        window,
+        engine: new LocalAsyncEngine(),
+        notes: new NotesStore(),
+        history: new HistoryStore(),
+        settings: settingsStore,
+        onSettingsChanged: (next) => {
+          registerShortcut(next.globalShortcut);
+          app.setLoginItemSettings({ openAtLogin: next.launchAtStartup });
+        },
+      });
+      createAppTray();
+
+      registerShortcut(settings.globalShortcut);
+      app.setLoginItemSettings({ openAtLogin: settings.launchAtStartup });
+      initializeUpdater();
+
+      window.once('ready-to-show', () => showMainWindow());
+      setTimeout(() => {
+        if (!window.isDestroyed() && !window.isVisible()) {
+          showMainWindow();
+        }
+      }, 1200);
+    } catch (error) {
+      console.error('ASYNC failed to start:', error);
+      dialog.showErrorBox(
+        'ASYNC could not start',
+        'The application could not initialize. Restart ASYNC and check Diagnostics if the problem continues.'
+      );
+      app.quit();
     }
-  };
-
-  registerIpcHandlers({
-    window,
-    engine: new LocalAsyncEngine(),
-    notes: new NotesStore(),
-    history: new HistoryStore(),
-    settings: settingsStore,
-    onSettingsChanged: (next) => {
-      registerShortcut(next.globalShortcut);
-      app.setLoginItemSettings({ openAtLogin: next.launchAtStartup });
-    },
   });
 
-  createAppTray();
-  registerShortcut(settings.globalShortcut);
-  app.setLoginItemSettings({ openAtLogin: settings.launchAtStartup });
-  initializeUpdater();
-
-  window.once('ready-to-show', () => showMainWindow());
-  setTimeout(() => {
-    if (!window.isDestroyed() && !window.isVisible()) {
-      showMainWindow();
-    }
-  }, 1200);
-});
-
-app.on('second-instance', () => showMainWindow());
-app.on('activate', () => showMainWindow());
-app.on('before-quit', () => markAppQuitting());
-app.on('will-quit', () => shortcutManager.unregisterAll());
-app.on('window-all-closed', () => {
-  // ASYNC stays available from the tray and global shortcut.
-});
+  app.on('second-instance', () => showMainWindow());
+  app.on('activate', () => showMainWindow());
+  app.on('before-quit', () => markAppQuitting());
+  app.on('will-quit', () => shortcutManager.unregisterAll());
+  app.on('window-all-closed', () => {
+    // ASYNC stays available from the tray and global shortcut.
+  });
+}

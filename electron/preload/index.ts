@@ -6,7 +6,9 @@ import type {
   AsyncDiagnostics,
   AsyncHealth,
   DesktopApi,
+  DesktopWindowState,
   HistoryItem,
+  LocalModel,
   Note,
   SelectionPayload,
   SetupProgress,
@@ -25,14 +27,23 @@ const api: DesktopApi = {
   platform: process.platform,
   app: {
     hide: () => ipcRenderer.invoke(IPC_CHANNELS.appHide),
+    toggleMaximize: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.appToggleMaximize) as Promise<DesktopWindowState>,
+    toggleFullScreen: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.appToggleFullScreen) as Promise<DesktopWindowState>,
+    getWindowState: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.appWindowStateGet) as Promise<DesktopWindowState>,
     getVersion: () => ipcRenderer.sendSync(IPC_CHANNELS.appVersion) as string,
     getDataLocation: () => ipcRenderer.invoke(IPC_CHANNELS.appDataLocation) as Promise<string>,
     openExternal: (url) => ipcRenderer.invoke(IPC_CHANNELS.appOpenExternal, url),
     onSelection: (callback) =>
       subscribe<SelectionPayload>(IPC_CHANNELS.selectionCaptured, callback),
+    onWindowState: (callback) =>
+      subscribe<DesktopWindowState>(IPC_CHANNELS.appWindowStateChanged, callback),
   },
   ai: {
     health: () => ipcRenderer.invoke(IPC_CHANNELS.aiHealth) as Promise<AsyncHealth>,
+    models: () => ipcRenderer.invoke(IPC_CHANNELS.aiModels) as Promise<LocalModel[]>,
     startChat: (request: AsyncChatRequest) => ipcRenderer.invoke(IPC_CHANNELS.aiChatStart, request),
     cancelChat: (requestId) => ipcRenderer.invoke(IPC_CHANNELS.aiChatCancel, requestId),
     onChatEvent: (callback) => subscribe<AsyncChatEvent>(IPC_CHANNELS.aiChatEvent, callback),

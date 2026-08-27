@@ -2,7 +2,7 @@
   "name": "async-desktop",
   "desktopName": "dev.async.desktop",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open-source desktop writing assistant for students and developers.",
   "author": {
     "name": "Pedro Tescaro",
@@ -31,6 +31,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "package:win": "tsc -b && vite build && electron-builder --win nsis --x64 --publish never",
+    "package:win:signed": "tsc -b && vite build && electron-builder --win nsis --x64 --publish never --config.forceCodeSigning=true",
     "package:linux": "tsc -b && vite build && electron-builder --linux AppImage deb --x64 --publish never",
     "ai:pull": "ollama pull qwen3:8b",
     "ai:create": "ollama create async -f ai/Modelfile",

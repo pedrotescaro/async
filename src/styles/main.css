@@ -12,6 +12,7 @@
   --faint: #9b9b9b;
   --border: rgba(10, 10, 10, 0.12);
   --border-strong: rgba(10, 10, 10, 0.22);
+  --focus-ring: rgba(10, 10, 10, 0.42);
   --inverse: #050505;
   --inverse-text: #f7f7f7;
   font-family: "Geist Variable", Geist, system-ui, sans-serif;
@@ -29,6 +30,7 @@
   --faint: #5f5f5f;
   --border: rgba(255, 255, 255, 0.1);
   --border-strong: rgba(255, 255, 255, 0.2);
+  --focus-ring: rgba(255, 255, 255, 0.38);
   --inverse: #f3f3f3;
   --inverse-text: #050505;
 }
@@ -63,13 +65,119 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
-button:focus-visible,
-a:focus-visible,
+button {
+  cursor: pointer;
+  transition-duration: 150ms;
+  transition-property: background-color, border-color, color, opacity, box-shadow;
+  transition-timing-function: ease;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, currentColor 58%, transparent);
+}
+
+a:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 2px;
+  outline: none;
+}
+
+.composer-frame {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.composer-frame:hover {
+  border-color: var(--border-strong);
+}
+
+.composer-frame:focus-within {
+  border-color: var(--border-strong);
+  box-shadow:
+    0 22px 65px rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px var(--focus-ring);
+}
+
+.field-frame,
+.field-control,
+.editor-frame,
+.editor-line,
+.interactive-card {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.field-frame:hover,
+.field-control:hover {
+  border-color: var(--border-strong);
+}
+
+.interactive-card:hover {
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--surface) 84%, var(--surface-raised));
+}
+
+.field-frame:focus-within,
+.field-control:focus-visible,
+.editor-frame:focus-within,
+.interactive-card:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: inset 0 0 0 1px var(--focus-ring);
+}
+
+.editor-line:has(> input:focus-visible) {
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--surface-raised) 58%, transparent);
+  box-shadow: inset 0 0 0 1px var(--focus-ring);
+}
+
+.editor-control {
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.editor-control:focus-visible {
+  background: color-mix(in srgb, var(--surface-raised) 58%, transparent);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.checkbox-control:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--focus-ring);
+}
+
+.command-search-frame {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.command-search-frame:focus-within {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.command-button:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.34);
 }
 
 ::selection {
