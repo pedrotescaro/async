@@ -69,9 +69,9 @@ export default function App() {
     setHistoryRevision((revision) => revision + 1);
   }, []);
 
-  async function refreshHealth() {
+  const refreshHealth = useCallback(async () => {
     setHealth(await window.asyncDesktop.ai.health());
-  }
+  }, []);
 
   useEffect(() => {
     void Promise.all([window.asyncDesktop.settings.get(), window.asyncDesktop.ai.health()]).then(
