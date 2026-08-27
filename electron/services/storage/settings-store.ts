@@ -14,6 +14,13 @@ function settingsPath(): string {
 }
 
 function sanitizeSettings(candidate: Partial<AppSettings>): AppSettings {
+  const selectedModel =
+    typeof candidate.selectedModel === 'string' &&
+    candidate.selectedModel.length <= 128 &&
+    /^(auto|[a-zA-Z0-9._:/-]+)$/.test(candidate.selectedModel)
+      ? candidate.selectedModel
+      : DEFAULT_SETTINGS.selectedModel;
+
   return {
     launchAtStartup:
       typeof candidate.launchAtStartup === 'boolean'
@@ -38,6 +45,18 @@ function sanitizeSettings(candidate: Partial<AppSettings>): AppSettings {
     )
       ? (candidate.codeExperience as AppSettings['codeExperience'])
       : DEFAULT_SETTINGS.codeExperience,
+    selectedModel,
+    chatEffort: ['low', 'medium', 'high'].includes(candidate.chatEffort ?? '')
+      ? (candidate.chatEffort as AppSettings['chatEffort'])
+      : DEFAULT_SETTINGS.chatEffort,
+    chatSpeed: ['normal', 'fast'].includes(candidate.chatSpeed ?? '')
+      ? (candidate.chatSpeed as AppSettings['chatSpeed'])
+      : DEFAULT_SETTINGS.chatSpeed,
+    speechLanguage: ['auto', 'pt-BR', 'en-US', 'es-ES', 'fr-FR', 'de-DE', 'it-IT'].includes(
+      candidate.speechLanguage ?? ''
+    )
+      ? (candidate.speechLanguage as AppSettings['speechLanguage'])
+      : DEFAULT_SETTINGS.speechLanguage,
     setupDismissed:
       typeof candidate.setupDismissed === 'boolean'
         ? candidate.setupDismissed

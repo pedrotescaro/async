@@ -2,6 +2,9 @@ import type {
   AsyncChatRequest,
   AsyncDiagnostics,
   AsyncHealth,
+  ChatEffort,
+  ChatSpeed,
+  LocalModel,
   SetupProgress,
   TransformRequest,
   TransformResult,
@@ -16,7 +19,12 @@ import {
 } from './runtime';
 
 interface OllamaTagsResponse {
-  models?: Array<{ name?: string; model?: string }>;
+  models?: Array<{
+    name?: string;
+    model?: string;
+    size?: number;
+    details?: { parameter_size?: string; quantization_level?: string };
+  }>;
 }
 
 interface OllamaChatChunk {
@@ -30,18 +38,77 @@ interface OllamaChatResponse {
   error?: string;
 }
 
+interface CompactTransformResponse {
+  result?: string;
+}
+
 const DEFAULT_RUNTIME_URL = 'http://127.0.0.1:11434';
 const DEFAULT_MODEL = 'async';
 const REQUEST_TIMEOUT_MS = 120_000;
 const MAX_CONTENT_LENGTH = 100_000;
+const MODEL_CACHE_TTL_MS = 30_000;
+const MODEL_KEEP_ALIVE = '30m';
+const COMPACT_TRANSFORM_SCHEMA = {
+  type: 'object',
+  properties: { result: { type: 'string' } },
+  required: ['result'],
+} as const;
+
+const TRANSFORM_INSTRUCTIONS: Record<TransformRequest['instruction'], string> = {
+  improve: 'Improve clarity and flow while preserving the original meaning and voice.',
+  grammar:
+    'Fix grammar, spelling, and punctuation only. Use the nearest correct spelling and never replace a misspelling with an antonym.',
+  clearer: 'Make the text easier to understand without adding new claims.',
+  concise: 'Make the text concise without removing essential meaning.',
+  rewrite: 'Rewrite the text naturally while preserving its meaning and language.',
+  translate: 'Translate faithfully while preserving tone and meaning.',
+};
+
+const TRANSFORM_SUMMARIES: Record<TransformRequest['instruction'], string> = {
+  improve: 'Improved clarity and flow while preserving the original meaning.',
+  grammar: 'Corrected grammar, spelling, and punctuation without changing the meaning.',
+  clearer: 'Clarified the wording without adding new information.',
+  concise: 'Removed unnecessary wording while preserving the essential meaning.',
+  rewrite: 'Reworked the phrasing while preserving the original meaning.',
+  translate: 'Translated the text while preserving its tone and meaning.',
+};
+
+function transformOptions(contentLength: number): GenerationProfile['options'] {
+  if (contentLength <= 600) {
+    return {
+      num_ctx: 2_048,
+      num_predict: Math.min(384, Math.max(64, Math.ceil(contentLength * 0.7) + 32)),
+      temperature: 0,
+    };
+  }
+  if (contentLength <= 4_000) {
+    return {
+      num_ctx: 4_096,
+      num_predict: Math.min(1_600, Math.max(384, Math.ceil(contentLength * 0.55) + 64)),
+      temperature: 0.1,
+    };
+  }
+  return { num_ctx: 8_192, num_predict: 2_048, temperature: 0.1 };
+}
 
 export interface AsyncEngine {
   chat(request: AsyncChatRequest): AsyncIterable<string>;
   cancel(requestId: string): void;
   transform(request: TransformRequest): Promise<TransformResult>;
   health(): Promise<AsyncHealth>;
+  models(): Promise<LocalModel[]>;
   setup(report: (progress: SetupProgress) => void): Promise<void>;
   diagnostics(): Promise<AsyncDiagnostics>;
+}
+
+interface GenerationProfile {
+  think: boolean;
+  compactPrompt: boolean;
+  options: {
+    num_ctx: number;
+    num_predict: number;
+    temperature: number;
+  };
 }
 
 export class LocalAsyncEngine implements AsyncEngine {
@@ -52,6 +119,8 @@ export class LocalAsyncEngine implements AsyncEngine {
 
   private readonly model = process.env.ASYNC_MODEL?.trim() || DEFAULT_MODEL;
   private readonly controllers = new Map<string, AbortController>();
+  private modelsCache: { tags: OllamaTagsResponse; expiresAt: number } | null = null;
+  private warmupStarted = false;
 
   private async fetchWithTimeout(
     path: string,
@@ -81,7 +150,10 @@ export class LocalAsyncEngine implements AsyncEngine {
     }
   }
 
-  private async listModels(): Promise<OllamaTagsResponse> {
+  private async listModels(force = false): Promise<OllamaTagsResponse> {
+    if (!force && this.modelsCache && this.modelsCache.expiresAt > Date.now()) {
+      return this.modelsCache.tags;
+    }
     const response = await this.fetchWithTimeout('/api/tags', {}, 5_000);
     if (!response.ok) {
       throw new AsyncEngineError(
@@ -89,14 +161,94 @@ export class LocalAsyncEngine implements AsyncEngine {
         `Runtime health returned ${response.status}.`
       );
     }
-    return (await response.json()) as OllamaTagsResponse;
+    const tags = (await response.json()) as OllamaTagsResponse;
+    this.modelsCache = { tags, expiresAt: Date.now() + MODEL_CACHE_TTL_MS };
+    return tags;
   }
 
-  private modelAvailable(tags: OllamaTagsResponse): boolean {
+  private modelAvailable(tags: OllamaTagsResponse, model = this.model): boolean {
     return (tags.models ?? []).some((entry) => {
       const name = entry.name ?? entry.model ?? '';
-      return name === this.model || name.startsWith(`${this.model}:`);
+      return name === model || name.startsWith(`${model}:`);
     });
+  }
+
+  private resolveModel(requested?: string): string {
+    if (!requested || requested === 'auto') return this.model;
+    if (requested.length > 128 || !/^[a-zA-Z0-9._:/-]+$/.test(requested)) {
+      throw new AsyncEngineError('INVALID_RESPONSE', 'The selected local model is invalid.');
+    }
+    return requested;
+  }
+
+  private generationProfile(request: AsyncChatRequest): GenerationProfile {
+    const effort: ChatEffort = request.effort ?? 'medium';
+    const speed: ChatSpeed = request.speed ?? 'normal';
+    const latest = request.messages.at(-1)?.content ?? '';
+    const complexTask = ['code-review', 'debug'].includes(request.task ?? '');
+    const largeContext = latest.length > 6_000 || request.messages.length > 6;
+    const simpleRequest =
+      !complexTask &&
+      !largeContext &&
+      latest.length <= 800 &&
+      request.messages.length <= 4 &&
+      !/```|stack trace|exception|\berror\b/i.test(latest);
+
+    if (speed === 'fast' || (effort === 'low' && !largeContext) || simpleRequest) {
+      return {
+        think: false,
+        compactPrompt: true,
+        options: {
+          num_ctx: largeContext ? 4_096 : 2_048,
+          num_predict:
+            request.responseDetail === 'detailed'
+              ? 512
+              : request.responseDetail === 'concise'
+                ? 192
+                : 320,
+          temperature: 0.2,
+        },
+      };
+    }
+
+    if (effort === 'high' || complexTask || largeContext) {
+      return {
+        think: effort === 'high',
+        compactPrompt: false,
+        options: {
+          num_ctx: 8_192,
+          num_predict: request.responseDetail === 'concise' ? 512 : 1_024,
+          temperature: 0.3,
+        },
+      };
+    }
+
+    return {
+      think: false,
+      compactPrompt: false,
+      options: {
+        num_ctx: 4_096,
+        num_predict: request.responseDetail === 'concise' ? 320 : 640,
+        temperature: 0.25,
+      },
+    };
+  }
+
+  async models(): Promise<LocalModel[]> {
+    const tags = await this.listModels();
+    return (tags.models ?? [])
+      .map((entry) => {
+        const name = entry.name ?? entry.model ?? '';
+        return {
+          name,
+          size: entry.size,
+          parameterSize: entry.details?.parameter_size,
+          quantizationLevel: entry.details?.quantization_level,
+          isDefault: name === this.model || name.startsWith(`${this.model}:`),
+        } satisfies LocalModel;
+      })
+      .filter((entry) => Boolean(entry.name))
+      .sort((a, b) => Number(b.isDefault) - Number(a.isDefault) || a.name.localeCompare(b.name));
   }
 
   async health(): Promise<AsyncHealth> {
@@ -109,6 +261,7 @@ export class LocalAsyncEngine implements AsyncEngine {
           message: 'ASYNC needs to finish its local setup.',
         };
       }
+      this.ensureWarmModel();
       return { status: 'ready', ready: true, message: 'ASYNC is ready.' };
     } catch {
       return {
@@ -117,6 +270,28 @@ export class LocalAsyncEngine implements AsyncEngine {
         message: "ASYNC couldn't start its local AI engine.",
       };
     }
+  }
+
+  private ensureWarmModel(): void {
+    if (this.warmupStarted) return;
+    this.warmupStarted = true;
+    void this.fetchWithTimeout(
+      '/api/generate',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: this.model,
+          prompt: ' ',
+          stream: false,
+          keep_alive: MODEL_KEEP_ALIVE,
+          options: { num_ctx: 2_048, num_predict: 1, temperature: 0 },
+        }),
+      },
+      REQUEST_TIMEOUT_MS
+    ).catch(() => {
+      this.warmupStarted = false;
+    });
   }
 
   async *chat(request: AsyncChatRequest): AsyncIterable<string> {
@@ -129,7 +304,9 @@ export class LocalAsyncEngine implements AsyncEngine {
 
     const controller = new AbortController();
     this.controllers.set(request.requestId, controller);
-    const systemPrompt = await buildSystemPrompt(request);
+    const profile = this.generationProfile(request);
+    const systemPrompt = await buildSystemPrompt({ ...request, compact: profile.compactPrompt });
+    const model = this.resolveModel(request.selectedModel);
     const messages = [
       { role: 'system', content: systemPrompt },
       ...request.messages.map(({ role, content }) => ({ role, content })),
@@ -139,7 +316,14 @@ export class LocalAsyncEngine implements AsyncEngine {
       const response = await this.fetchWithTimeout('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: this.model, messages, stream: true }),
+        body: JSON.stringify({
+          model,
+          messages,
+          stream: true,
+          think: profile.think,
+          keep_alive: MODEL_KEEP_ALIVE,
+          options: profile.options,
+        }),
         signal: controller.signal,
       });
       await this.assertChatResponse(response);
@@ -212,17 +396,15 @@ export class LocalAsyncEngine implements AsyncEngine {
       throw new AsyncEngineError('INVALID_RESPONSE', 'Valid source text is required.');
     }
 
-    const systemPrompt = await buildSystemPrompt({ task: 'writing' });
-    const schemaInstruction = [
-      `Transform instruction: ${request.instruction}.`,
+    const transformInstruction = [
+      `Task: ${TRANSFORM_INSTRUCTIONS[request.instruction]}`,
       request.targetLanguage ? `Target language: ${request.targetLanguage}.` : '',
-      'Return only JSON with this exact shape:',
-      '{"result":"...","changes":[{"before":"...","after":"...","reason":"..."}],"explanation":"...","confidence":"low|medium|high"}',
-      'Source:',
+      'Return only JSON containing the transformed text in the result field.',
+      'Text:',
       content,
     ]
       .filter(Boolean)
-      .join('\n\n');
+      .join('\n');
 
     const response = await this.fetchWithTimeout('/api/chat', {
       method: 'POST',
@@ -230,36 +412,50 @@ export class LocalAsyncEngine implements AsyncEngine {
       body: JSON.stringify({
         model: this.model,
         stream: false,
-        format: 'json',
+        think: false,
+        keep_alive: MODEL_KEEP_ALIVE,
+        format: COMPACT_TRANSFORM_SCHEMA,
+        options: transformOptions(content.length),
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: schemaInstruction },
+          {
+            role: 'system',
+            content:
+              "You are a precise copy editor. Preserve the author's intended meaning, words, tone, and language. Fix only what the task requests. Return compact JSON only.",
+          },
+          { role: 'user', content: transformInstruction },
         ],
       }),
     });
     await this.assertChatResponse(response);
     const payload = (await response.json()) as OllamaChatResponse;
     if (payload.error) throw new AsyncEngineError('UNKNOWN', payload.error);
-    return this.parseTransform(payload.message?.content ?? '');
+    return this.parseTransform(payload.message?.content ?? '', request, content);
   }
 
-  private parseTransform(content: string): TransformResult {
+  private parseTransform(
+    responseContent: string,
+    request: TransformRequest,
+    source: string
+  ): TransformResult {
     try {
-      const parsed = JSON.parse(content) as Partial<TransformResult>;
-      if (!parsed.result || !parsed.explanation || !Array.isArray(parsed.changes)) {
-        throw new Error('Missing transformation fields.');
-      }
-      const confidence = ['low', 'medium', 'high'].includes(parsed.confidence ?? '')
-        ? parsed.confidence
-        : 'medium';
+      const parsed = JSON.parse(responseContent) as CompactTransformResponse;
+      const result = parsed.result?.trim();
+      if (!result) throw new Error('Missing transformed text.');
+      const explanation = TRANSFORM_SUMMARIES[request.instruction];
+      const changed = result !== source;
       return {
-        result: parsed.result,
-        explanation: parsed.explanation,
-        changes: parsed.changes.filter(
-          (change): change is TransformResult['changes'][number] =>
-            typeof change?.reason === 'string'
-        ),
-        confidence: confidence as TransformResult['confidence'],
+        result,
+        explanation,
+        changes: changed
+          ? [
+              {
+                before: source.length <= 240 ? source : undefined,
+                after: result.length <= 240 ? result : undefined,
+                reason: explanation,
+              },
+            ]
+          : [],
+        confidence: source.length <= 600 ? 'high' : 'medium',
       };
     } catch (error) {
       throw new AsyncEngineError('INVALID_RESPONSE', 'Transformation response was invalid.', {

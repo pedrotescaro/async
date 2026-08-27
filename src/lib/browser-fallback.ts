@@ -32,12 +32,16 @@ export function ensureDesktopApi(): DesktopApi {
     platform: 'win32',
     app: {
       hide: async () => {},
-      getVersion: () => '0.1.0',
+      toggleMaximize: async () => ({ maximized: false, fullScreen: false }),
+      toggleFullScreen: async () => ({ maximized: false, fullScreen: false }),
+      getWindowState: async () => ({ maximized: false, fullScreen: false }),
+      getVersion: () => '0.2.0',
       getDataLocation: async () => 'LocalStorage (Browser Mode)',
       openExternal: async (url: string) => {
         window.open(url, '_blank', 'noopener,noreferrer');
       },
       onSelection: () => () => {},
+      onWindowState: () => () => {},
     },
     ai: {
       health: async () => ({
@@ -45,6 +49,7 @@ export function ensureDesktopApi(): DesktopApi {
         ready: true,
         message: 'Running in Web Preview Mode.',
       }),
+      models: async () => [],
       startChat: async () => {},
       cancelChat: async () => {},
       onChatEvent: () => () => {},
@@ -137,9 +142,15 @@ export function ensureDesktopApi(): DesktopApi {
       },
     },
     settings: {
-      get: async () => getStorage<AppSettings>('async_settings', DEFAULT_APP_SETTINGS),
+      get: async () => ({
+        ...DEFAULT_APP_SETTINGS,
+        ...getStorage<Partial<AppSettings>>('async_settings', {}),
+      }),
       save: async (patch) => {
-        const current = getStorage<AppSettings>('async_settings', DEFAULT_APP_SETTINGS);
+        const current = {
+          ...DEFAULT_APP_SETTINGS,
+          ...getStorage<Partial<AppSettings>>('async_settings', {}),
+        };
         const updated = { ...current, ...patch };
         setStorage('async_settings', updated);
         return updated;

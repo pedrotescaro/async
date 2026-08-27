@@ -23,6 +23,9 @@ export interface AsyncChatRequest {
   responseDetail?: ResponseDetail;
   learningStyle?: LearningStyle;
   codeExperience?: CodeExperience;
+  selectedModel?: string;
+  effort?: ChatEffort;
+  speed?: ChatSpeed;
 }
 
 export interface AsyncChatEvent {
@@ -115,6 +118,22 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 export type ResponseDetail = 'concise' | 'balanced' | 'detailed';
 export type LearningStyle = 'guided' | 'examples' | 'socratic';
 export type CodeExperience = 'beginner' | 'intermediate' | 'advanced';
+export type ChatEffort = 'low' | 'medium' | 'high';
+export type ChatSpeed = 'normal' | 'fast';
+export type SpeechLanguage = 'auto' | 'pt-BR' | 'en-US' | 'es-ES' | 'fr-FR' | 'de-DE' | 'it-IT';
+
+export interface LocalModel {
+  name: string;
+  size?: number;
+  parameterSize?: string;
+  quantizationLevel?: string;
+  isDefault: boolean;
+}
+
+export interface DesktopWindowState {
+  maximized: boolean;
+  fullScreen: boolean;
+}
 
 export interface AppSettings {
   launchAtStartup: boolean;
@@ -124,6 +143,10 @@ export interface AppSettings {
   responseDetail: ResponseDetail;
   learningStyle: LearningStyle;
   codeExperience: CodeExperience;
+  selectedModel: string;
+  chatEffort: ChatEffort;
+  chatSpeed: ChatSpeed;
+  speechLanguage: SpeechLanguage;
   setupDismissed: boolean;
 }
 
@@ -135,6 +158,10 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   responseDetail: 'balanced',
   learningStyle: 'guided',
   codeExperience: 'intermediate',
+  selectedModel: 'auto',
+  chatEffort: 'medium',
+  chatSpeed: 'normal',
+  speechLanguage: 'auto',
   setupDismissed: false,
 };
 
@@ -147,13 +174,18 @@ export interface DesktopApi {
   platform: NodeJS.Platform;
   app: {
     hide(): Promise<void>;
+    toggleMaximize(): Promise<DesktopWindowState>;
+    toggleFullScreen(): Promise<DesktopWindowState>;
+    getWindowState(): Promise<DesktopWindowState>;
     getVersion(): string;
     getDataLocation(): Promise<string>;
     openExternal(url: string): Promise<void>;
     onSelection(callback: (payload: SelectionPayload) => void): () => void;
+    onWindowState(callback: (state: DesktopWindowState) => void): () => void;
   };
   ai: {
     health(): Promise<AsyncHealth>;
+    models(): Promise<LocalModel[]>;
     startChat(request: AsyncChatRequest): Promise<void>;
     cancelChat(requestId: string): Promise<void>;
     onChatEvent(callback: (event: AsyncChatEvent) => void): () => void;

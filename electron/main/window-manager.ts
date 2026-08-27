@@ -1,10 +1,22 @@
 import { BrowserWindow, shell } from 'electron';
-import type { SelectionPayload } from '../../src/lib/contracts';
+import type { DesktopWindowState, SelectionPayload } from '../../src/lib/contracts';
 import { IPC_CHANNELS } from '../ipc/channels';
 import { APP_ICON, DEV_SERVER_URL, INDEX_HTML, PRELOAD_PATH } from './constants';
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
+
+function windowState(window = mainWindow): DesktopWindowState {
+  return {
+    maximized: Boolean(window?.isMaximized()),
+    fullScreen: Boolean(window?.isFullScreen()),
+  };
+}
+
+function emitWindowState(window: BrowserWindow): void {
+  if (window.isDestroyed()) return;
+  window.webContents.send(IPC_CHANNELS.appWindowStateChanged, windowState(window));
+}
 
 export function createMainWindow(): BrowserWindow {
   mainWindow = new BrowserWindow({
@@ -39,6 +51,27 @@ export function createMainWindow(): BrowserWindow {
     console.error('ASYNC renderer exited unexpectedly:', details.reason);
   });
 
+  const trustedWebContentsId = mainWindow.webContents.id;
+  mainWindow.webContents.session.setPermissionCheckHandler(
+    (webContents, permission, _origin, details) => {
+      if (webContents?.id !== trustedWebContentsId) return false;
+      if (permission === 'clipboard-sanitized-write') return true;
+      return permission === 'media' && details.mediaType === 'audio';
+    }
+  );
+  mainWindow.webContents.session.setPermissionRequestHandler(
+    (webContents, permission, callback, details) => {
+      const mediaTypes = 'mediaTypes' in details ? details.mediaTypes : undefined;
+      const audioOnly =
+        Boolean(mediaTypes?.length) && mediaTypes?.every((type) => type === 'audio');
+      callback(
+        webContents.id === trustedWebContentsId &&
+          (permission === 'clipboard-sanitized-write' ||
+            (permission === 'media' && audioOnly === true))
+      );
+    }
+  );
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https://')) void shell.openExternal(url);
     return { action: 'deny' };
@@ -56,6 +89,10 @@ export function createMainWindow(): BrowserWindow {
     event.preventDefault();
     mainWindow?.hide();
   });
+  mainWindow.on('maximize', () => emitWindowState(mainWindow as BrowserWindow));
+  mainWindow.on('unmaximize', () => emitWindowState(mainWindow as BrowserWindow));
+  mainWindow.on('enter-full-screen', () => emitWindowState(mainWindow as BrowserWindow));
+  mainWindow.on('leave-full-screen', () => emitWindowState(mainWindow as BrowserWindow));
   if (DEV_SERVER_URL) {
     void mainWindow.loadURL(DEV_SERVER_URL).catch((error) => {
       console.error('ASYNC failed to load the development server:', error);
@@ -90,6 +127,23 @@ export function showMainWindow(selection?: SelectionPayload | null): void {
 
 export function hideMainWindow(): void {
   mainWindow?.hide();
+}
+
+export function getWindowState(): DesktopWindowState {
+  return windowState();
+}
+
+export function toggleMaximize(): DesktopWindowState {
+  if (!mainWindow || mainWindow.isDestroyed()) return windowState();
+  if (mainWindow.isMaximized()) mainWindow.unmaximize();
+  else mainWindow.maximize();
+  return windowState(mainWindow);
+}
+
+export function toggleFullScreen(): DesktopWindowState {
+  if (!mainWindow || mainWindow.isDestroyed()) return windowState();
+  mainWindow.setFullScreen(!mainWindow.isFullScreen());
+  return windowState(mainWindow);
 }
 
 export function markAppQuitting(): void {

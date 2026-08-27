@@ -23,8 +23,24 @@ export async function buildSystemPrompt(input: {
   responseDetail?: ResponseDetail;
   learningStyle?: LearningStyle;
   codeExperience?: CodeExperience;
+  compact?: boolean;
 }): Promise<string> {
   const task = input.task === 'chat' || !input.task ? 'teacher' : input.task;
+  if (input.compact) {
+    const compactRole: Partial<Record<AsyncTask, string>> = {
+      teacher: 'Explain clearly and use a small example only when it helps.',
+      writing: 'Improve the text while preserving its meaning.',
+      translation: 'Translate faithfully and preserve tone.',
+      summarization: 'Keep only the essential information.',
+    };
+    return [
+      "You are ASYNC, a local assistant. Answer accurately and concisely in the user's language.",
+      'Never claim unverified actions or reveal private reasoning.',
+      compactRole[task],
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
   const [base, specialist] = await Promise.all([readPrompt('base'), readPrompt(task)]);
   const preferences = [
     `Response detail: ${input.responseDetail ?? 'balanced'}.`,

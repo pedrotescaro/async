@@ -74,13 +74,26 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    void Promise.all([window.asyncDesktop.settings.get(), window.asyncDesktop.ai.health()]).then(
-      ([loadedSettings, loadedHealth]) => {
-        setSettings(loadedSettings);
-        setHealth(loadedHealth);
-        setShowSetup(!loadedHealth.ready && !loadedSettings.setupDismissed);
-      }
-    );
+    let disposed = false;
+    void Promise.allSettled([
+      window.asyncDesktop.settings.get(),
+      window.asyncDesktop.ai.health(),
+    ]).then(([settingsResult, healthResult]) => {
+      if (disposed) return;
+      const loadedSettings =
+        settingsResult.status === 'fulfilled' ? settingsResult.value : DEFAULT_APP_SETTINGS;
+      const loadedHealth =
+        healthResult.status === 'fulfilled'
+          ? healthResult.value
+          : {
+              status: 'runtime-offline' as const,
+              ready: false,
+              message: "ASYNC couldn't reach its local AI engine.",
+            };
+      setSettings(loadedSettings);
+      setHealth(loadedHealth);
+      setShowSetup(!loadedHealth.ready && !loadedSettings.setupDismissed);
+    });
     const unsubscribeSetup = window.asyncDesktop.ai.onSetupProgress((progress) => {
       setSetupProgress(progress);
       if (progress.stage === 'ready')
@@ -93,6 +106,7 @@ export default function App() {
       setView('chat');
     });
     return () => {
+      disposed = true;
       unsubscribeSetup();
       unsubscribeSelection();
     };
@@ -105,6 +119,11 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'F11') {
+        event.preventDefault();
+        void window.asyncDesktop.app.toggleFullScreen();
+        return;
+      }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
         setCommandsOpen((open) => !open);
@@ -204,6 +223,7 @@ export default function App() {
             seed={conversationSeed}
             engineReady={health.ready}
             onDraftChange={setDraft}
+            onSettingsChange={saveSettings}
             onHistorySaved={handleHistorySaved}
             onOpenDiagnostics={() => setView('diagnostics')}
           />
